@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chi tiêu</title>
+<style>
+:root{
+  --paper:#f5f6f3; --card:#ffffff; --ink:#14201c; --muted:#6a766f; --line:#e3e7e2;
+  --in:#1f8a5b; --out:#c2415a; --mint:#3dbe8b;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--paper);color:var(--ink);font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:16px;line-height:1.4;font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.app{max-width:560px;margin:0 auto;padding:14px 16px 110px}
+
+.months{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.months button{width:40px;height:40px;border-radius:20px;background:var(--card);border:1px solid var(--line);font-size:20px}
+.months span{font-weight:600;font-size:17px}
+
+.balance{background:var(--ink);color:#fff;border-radius:22px;padding:22px 20px 18px}
+.balance small{color:#a9b8b0;font-size:13px}
+.balance .big{font-size:38px;font-weight:700;letter-spacing:-.5px;margin:2px 0 16px}
+.balance .row{display:flex;gap:10px}
+.balance .row div{flex:1;border-radius:14px;padding:10px 12px;background:rgba(255,255,255,.08)}
+.balance .row b{display:block;font-size:17px;margin-top:2px}
+.up{color:#6fe0ae}.down{color:#ff8da1}
+
+h2{font-size:15px;margin:26px 2px 10px;font-weight:600}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:6px 14px}
+.cat{padding:10px 0;border-bottom:1px solid var(--line)}
+.cat:last-child{border-bottom:0}
+.cat .top{display:flex;justify-content:space-between;gap:8px;font-size:15px}
+.bar{height:6px;border-radius:3px;background:var(--line);margin-top:7px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--out);border-radius:3px}
+
+.day{font-size:13px;color:var(--muted);margin:18px 4px 6px;display:flex;justify-content:space-between}
+.tx{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:11px 14px;background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:6px}
+.tx .ico{width:40px;height:40px;border-radius:12px;background:var(--paper);display:grid;place-items:center;font-size:20px;flex:none}
+.tx .mid{flex:1;min-width:0}
+.tx .mid b{display:block;font-weight:600;font-size:15px}
+.tx .mid span{display:block;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx .amt{font-weight:700;font-size:15px;white-space:nowrap}
+.tx .amt.in{color:var(--in)}.tx .amt.out{color:var(--out)}
+.empty{text-align:center;color:var(--muted);padding:34px 10px}
+
+.fab{position:fixed;right:20px;bottom:22px;height:56px;padding:0 22px;border-radius:28px;background:var(--mint);color:var(--ink);font-weight:700;font-size:16px;box-shadow:0 6px 18px rgba(20,32,28,.28)}
+
+.scrim{position:fixed;inset:0;background:rgba(20,32,28,.45);display:none;z-index:5}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--card);border-radius:24px 24px 0 0;padding:18px 18px 22px;max-height:92%;overflow-y:auto;transform:translateY(100%);transition:transform .22s ease;max-width:560px;margin:0 auto}
+.open .scrim{display:block}
+.open .sheet{transform:none}
+.seg{display:flex;background:var(--paper);border-radius:14px;padding:4px;margin-bottom:14px}
+.seg button{flex:1;height:40px;border-radius:11px;font-weight:600;color:var(--muted)}
+.seg button.on.out{background:var(--out);color:#fff}
+.seg button.on.in{background:var(--in);color:#fff}
+.amount{width:100%;border:0;border-bottom:2px solid var(--line);font-size:34px;font-weight:700;line-height:1.2;font-family:inherit;padding:6px 0;background:none;color:var(--ink);outline:0}
+.amount:focus{border-color:var(--mint)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.chip{padding:8px 12px;border-radius:20px;border:1px solid var(--line);font-size:14px}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.field{width:100%;height:46px;border:1px solid var(--line);border-radius:12px;padding:0 12px;font:inherit;background:var(--card);color:var(--ink);margin-bottom:10px}
+.actions{display:flex;gap:10px;margin-top:6px}
+.actions button{flex:1;height:50px;border-radius:14px;font-weight:700}
+#save{background:var(--ink);color:#fff}
+#del{background:#fbe9ed;color:var(--out);flex:0 0 96px}
+.err{color:var(--out);font-size:13px;min-height:18px;margin:2px 2px 6px}
+</style>
+</head>
+<body>
+<div id="root">
+<div class="app">
+  <div class="months">
+    <button id="prev" aria-label="Tháng trước">‹</button>
+    <span id="month"></span>
+    <button id="next" aria-label="Tháng sau">›</button>
+  </div>
+
+  <div class="balance">
+    <small>Còn lại trong tháng</small>
+    <div class="big" id="left"></div>
+    <div class="row">
+      <div><small>Thu</small><b class="up" id="inc"></b></div>
+      <div><small>Chi</small><b class="down" id="exp"></b></div>
+    </div>
+  </div>
+
+  <div id="catsWrap">
+    <h2>Chi theo nhóm</h2>
+    <div class="panel" id="cats"></div>
+  </div>
+
+  <h2>Giao dịch</h2>
+  <div id="list"></div>
+</div>
+
+<button class="fab" id="add">+ Thêm giao dịch</button>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true">
+  <div class="seg">
+    <button id="tOut" class="out">Chi tiêu</button>
+    <button id="tIn" class="in">Thu nhập</button>
+  </div>
+  <input class="amount" id="amount" inputmode="numeric" placeholder="0 ₫" autocomplete="off">
+  <div class="err" id="err"></div>
+  <div class="chips" id="chips"></div>
+  <input class="field" id="note" placeholder="Ghi chú (không bắt buộc)" maxlength="80">
+  <input class="field" id="date" type="date">
+  <div class="actions">
+    <button id="del">Xóa</button>
+    <button id="save">Lưu</button>
+  </div>
+</div>
+</div>
+
+<script>
+var CATS = {
+  out: [["🍜","Ăn uống"],["🚌","Đi lại"],["🛒","Mua sắm"],["🏠","Nhà cửa"],["🎮","Giải trí"],["💊","Sức khỏe"],["📚","Học tập"],["📦","Khác"]],
+  in:  [["💼","Lương"],["🎁","Thưởng"],["📈","Đầu tư"],["📦","Khác"]]
+};
+var KEY = "chitieu.v1";
+var tx = [];
+try { tx = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { tx = []; }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(tx)); } catch (e) {} }
+
+function $(s) { return document.querySelector(s); }
+function pad(n) { return String(n).padStart(2, "0"); }
+function todayStr() { var d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+function money(n) { return Math.round(n).toLocaleString("vi-VN") + " ₫"; }
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+function iconOf(type, cat) { var c = CATS[type].filter(function (x) { return x[1] === cat; })[0]; return c ? c[0] : "📦"; }
+
+var ym = todayStr().slice(0, 7);
+var form = { id: null, type: "out", cat: "Ăn uống" };
+
+function dayLabel(d) {
+  var t = todayStr();
+  var y = new Date(); y.setDate(y.getDate() - 1);
+  var ys = y.getFullYear() + "-" + pad(y.getMonth() + 1) + "-" + pad(y.getDate());
+  var p = d.split("-");
+  var base = p[2] + "/" + p[1];
+  if (d === t) return "Hôm nay · " + base;
+  if (d === ys) return "Hôm qua · " + base;
+  return base;
+}
+
+function render() {
+  var p = ym.split("-");
+  $("#month").textContent = "Tháng " + (+p[1]) + "/" + p[0];
+
+  var list = tx.filter(function (t) { return t.date.indexOf(ym) === 0; })
+    .sort(function (a, b) { return b.date.localeCompare(a.date) || b.id - a.id; });
+  var inc = 0, exp = 0, byCat = {};
+  list.forEach(function (t) {
+    if (t.type === "in") inc += t.amount;
+    else { exp += t.amount; byCat[t.cat] = (byCat[t.cat] || 0) + t.amount; }
+  });
+
+  $("#left").textContent = money(inc - exp);
+  $("#inc").textContent = money(inc);
+  $("#exp").textContent = money(exp);
+
+  var cats = Object.keys(byCat).sort(function (a, b) { return byCat[b] - byCat[a]; });
+  $("#catsWrap").style.display = cats.length ? "" : "none";
+  $("#cats").innerHTML = cats.map(function (c) {
+    var pct = exp ? Math.round(byCat[c] / exp * 100) : 0;
+    return '<div class="cat"><div class="top"><span>' + iconOf("out", c) + " " + esc(c) + "</span><span>" +
+      money(byCat[c]) + " · " + pct + '%</span></div><div class="bar"><i style="width:' + pct + '%"></i></div></div>';
+  }).join("");
+
+  if (!list.length) {
+    $("#list").innerHTML = '<div class="empty">Tháng này chưa có giao dịch.<br>Bấm “Thêm giao dịch” để ghi khoản đầu tiên.</div>';
+    return;
+  }
+  var html = "", last = "";
+  list.forEach(function (t) {
+    if (t.date !== last) { html += '<div class="day"><span>' + dayLabel(t.date) + "</span></div>"; last = t.date; }
+    html += '<button class="tx" data-id="' + t.id + '"><div class="ico">' + iconOf(t.type, t.cat) +
+      '</div><div class="mid"><b>' + esc(t.cat) + "</b><span>" + esc(t.note || "") + '</span></div><div class="amt ' +
+      t.type + '">' + (t.type === "in" ? "+" : "−") + money(t.amount) + "</div></button>";
+  });
+  $("#list").innerHTML = html;
+}
+
+function shiftMonth(d) {
+  var p = ym.split("-");
+  var dt = new Date(+p[0], +p[1] - 1 + d, 1);
+  ym = dt.getFullYear() + "-" + pad(dt.getMonth() + 1);
+  render();
+}
+
+function renderForm() {
+  $("#tOut").className = "out" + (form.type === "out" ? " on" : "");
+  $("#tIn").className = "in" + (form.type === "in" ? " on" : "");
+  $("#chips").innerHTML = CATS[form.type].map(function (c) {
+    return '<button class="chip' + (c[1] === form.cat ? " on" : "") + '" data-cat="' + c[1] + '">' + c[0] + " " + c[1] + "</button>";
+  }).join("");
+  $("#del").style.display = form.id ? "" : "none";
+}
+
+function openSheet(id) {
+  var t = id ? tx.filter(function (x) { return x.id === id; })[0] : null;
+  form = t ? { id: t.id, type: t.type, cat: t.cat } : { id: null, type: "out", cat: CATS.out[0][1] };
+  $("#amount").value = t ? t.amount.toLocaleString("vi-VN") : "";
+  $("#note").value = t ? t.note : "";
+  $("#date").value = t ? t.date : (ym === todayStr().slice(0, 7) ? todayStr() : ym + "-01");
+  $("#err").textContent = "";
+  renderForm();
+  $("#root").classList.add("open");
+  if (!t) setTimeout(function () { $("#amount").focus(); }, 250);
+}
+function closeSheet() { $("#root").classList.remove("open"); document.activeElement && document.activeElement.blur(); }
+
+function setType(t) {
+  form.type = t;
+  if (!CATS[t].some(function (c) { return c[1] === form.cat; })) form.cat = CATS[t][0][1];
+  renderForm();
+}
+
+function submit() {
+  var n = parseInt($("#amount").value.replace(/\D/g, ""), 10);
+  if (!n || n <= 0) { $("#err").textContent = "Nhập số tiền lớn hơn 0."; return; }
+  if (!$("#date").value) { $("#err").textContent = "Chọn ngày giao dịch."; return; }
+  var rec = { id: form.id || Date.now(), type: form.type, amount: n, cat: form.cat, note: $("#note").value.trim(), date: $("#date").value };
+  if (form.id) tx = tx.map(function (x) { return x.id === form.id ? rec : x; });
+  else tx.push(rec);
+  save();
+  ym = rec.date.slice(0, 7);
+  closeSheet();
+  render();
+}
+
+$("#prev").onclick = function () { shiftMonth(-1); };
+$("#next").onclick = function () { shiftMonth(1); };
+$("#add").onclick = function () { openSheet(null); };
+$("#scrim").onclick = closeSheet;
+$("#tOut").onclick = function () { setType("out"); };
+$("#tIn").onclick = function () { setType("in"); };
+$("#save").onclick = submit;
+$("#del").onclick = function () {
+  if (!form.id) return;
+  if (confirm("Xóa giao dịch này?")) { tx = tx.filter(function (x) { return x.id !== form.id; }); save(); closeSheet(); render(); }
+};
+$("#chips").onclick = function (e) {
+  var b = e.target.closest(".chip"); if (!b) return;
+  form.cat = b.getAttribute("data-cat"); renderForm();
+};
+$("#list").onclick = function (e) {
+  var b = e.target.closest(".tx"); if (b) openSheet(+b.getAttribute("data-id"));
+};
+$("#amount").oninput = function (e) {
+  var d = e.target.value.replace(/\D/g, "").slice(0, 12);
+  e.target.value = d ? parseInt(d, 10).toLocaleString("vi-VN") : "";
+};
+
+window.handleBack = function () {
+  if ($("#root").classList.contains("open")) { closeSheet(); return true; }
+  return false;
+};
+
+render();
+</script>
+</body>
+</html>
